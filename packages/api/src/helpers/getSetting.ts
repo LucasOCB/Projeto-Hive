@@ -3,6 +3,8 @@ import { env } from '../config/env';
 
 const ENV_MAP: Record<string, () => string | undefined> = {
   NANO_BANANA_API_KEY: () => env.NANO_BANANA_API_KEY,
+  FREEPIK_API_KEY: () => env.FREEPIK_API_KEY,
+  IMAGE_PROVIDER: () => env.IMAGE_PROVIDER,
   INSTAGRAM_ACCESS_TOKEN: () => env.INSTAGRAM_ACCESS_TOKEN,
   INSTAGRAM_USER_ID: () => env.INSTAGRAM_USER_ID,
   TELEGRAM_BOT_TOKEN: () => env.TELEGRAM_BOT_TOKEN,

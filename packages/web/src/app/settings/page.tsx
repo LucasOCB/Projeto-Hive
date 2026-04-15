@@ -38,16 +38,6 @@ const SERVICES: ServiceConfig[] = [
     ],
   },
   {
-    name: 'Geracao de Imagens (Gemini)',
-    description: 'Geracao de imagens e legendas com IA via Google Gemini',
-    icon: Zap,
-    iconBg: 'bg-amber-500/10',
-    iconColor: 'text-amber-600',
-    fields: [
-      { key: 'NANO_BANANA_API_KEY', label: 'Google Gemini API Key', placeholder: 'AIzaSyxxxxxxxxx...' },
-    ],
-  },
-  {
     name: 'Telegram Bot',
     description: 'Criacao e gerenciamento de posts via Telegram',
     icon: Send,
@@ -73,6 +63,11 @@ export default function SettingsPage() {
   const [cookieUploading, setCookieUploading] = useState(false);
   const [cookieSaved, setCookieSaved] = useState(false);
 
+  // Image provider
+  const [imageProvider, setImageProvider] = useState<'gemini' | 'freepik'>('gemini');
+  const [providerSaving, setProviderSaving] = useState(false);
+  const [providerSaved, setProviderSaved] = useState(false);
+
   // Instagram accounts
   const [igAccounts, setIgAccounts] = useState<any[]>([]);
   const [showAddIg, setShowAddIg] = useState(false);
@@ -84,6 +79,12 @@ export default function SettingsPage() {
     loadSettings();
     loadIgAccounts();
   }, []);
+
+  useEffect(() => {
+    if (settings['IMAGE_PROVIDER']?.value) {
+      setImageProvider(settings['IMAGE_PROVIDER'].value as 'gemini' | 'freepik');
+    }
+  }, [settings]);
 
   async function loadIgAccounts() {
     try {
@@ -116,6 +117,18 @@ export default function SettingsPage() {
       await api.deleteInstagramAccount(id);
       await loadIgAccounts();
     } catch {}
+  }
+
+  async function handleSaveProvider(provider: 'gemini' | 'freepik') {
+    setProviderSaving(true);
+    try {
+      await api.updateSetting('IMAGE_PROVIDER', provider);
+      setImageProvider(provider);
+      setProviderSaved(true);
+      setTimeout(() => setProviderSaved(false), 2000);
+      await loadSettings();
+    } catch {}
+    setProviderSaving(false);
   }
 
   async function loadSettings() {
@@ -430,6 +443,124 @@ export default function SettingsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Image Generation Provider */}
+        <p className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Geracao de Imagens</p>
+        <div className="card p-5 mb-4">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+              <Zap className="w-6 h-6 text-amber-600" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm font-bold text-text-primary">Geracao de Imagens com IA</h3>
+                {(imageProvider === 'gemini' ? settings['NANO_BANANA_API_KEY']?.hasValue : settings['FREEPIK_API_KEY']?.hasValue) ? (
+                  <span className="badge badge-completed flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" strokeWidth={2} />
+                    Conectado
+                  </span>
+                ) : (
+                  <span className="badge badge-draft flex items-center gap-1">
+                    <XCircle className="w-3 h-3" strokeWidth={2} />
+                    Nao configurado
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-text-secondary mb-4">Escolha o provider de IA para gerar imagens nos posts</p>
+
+              {/* Provider selector */}
+              <div className="mb-4">
+                <label className="block text-[11px] font-semibold text-text-muted mb-2">Provider</label>
+                <div className="flex gap-2">
+                  {(['gemini', 'freepik'] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => handleSaveProvider(p)}
+                      disabled={providerSaving}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${
+                        imageProvider === p
+                          ? 'bg-primary/15 border-primary text-primary'
+                          : 'bg-bg-main border-border text-text-secondary hover:border-primary/50'
+                      }`}
+                    >
+                      {providerSaving && imageProvider !== p ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" />
+                      ) : (
+                        p === 'gemini' ? 'Google Gemini' : 'Freepik Mystic'
+                      )}
+                      {providerSaved && imageProvider === p && <Check className="w-3 h-3 inline ml-1" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dynamic API key field */}
+              {imageProvider === 'gemini' ? (
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">Google Gemini API Key</label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={showValues['NANO_BANANA_API_KEY'] ? 'text' : 'password'}
+                        value={editValues['NANO_BANANA_API_KEY'] ?? ''}
+                        onChange={(e) => setEditValues((v) => ({ ...v, NANO_BANANA_API_KEY: e.target.value }))}
+                        className="input-field text-xs pr-8"
+                        placeholder={settings['NANO_BANANA_API_KEY']?.hasValue ? settings['NANO_BANANA_API_KEY'].value : 'AIzaSyxxxxxxxxx...'}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSave('NANO_BANANA_API_KEY')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowValues((v) => ({ ...v, NANO_BANANA_API_KEY: !v['NANO_BANANA_API_KEY'] }))}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-text-muted hover:text-text-primary z-10"
+                      >
+                        {showValues['NANO_BANANA_API_KEY'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleSave('NANO_BANANA_API_KEY')}
+                      disabled={!editValues['NANO_BANANA_API_KEY'] || saving['NANO_BANANA_API_KEY']}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 bg-primary/10 text-primary hover:bg-primary/20"
+                    >
+                      {saving['NANO_BANANA_API_KEY'] ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved['NANO_BANANA_API_KEY'] ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-text-muted mt-1">Gere em <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">aistudio.google.com</a> → Get API key</p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted mb-1">Freepik API Key</label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={showValues['FREEPIK_API_KEY'] ? 'text' : 'password'}
+                        value={editValues['FREEPIK_API_KEY'] ?? ''}
+                        onChange={(e) => setEditValues((v) => ({ ...v, FREEPIK_API_KEY: e.target.value }))}
+                        className="input-field text-xs pr-8"
+                        placeholder={settings['FREEPIK_API_KEY']?.hasValue ? settings['FREEPIK_API_KEY'].value : 'FPSX-xxxxxxxx...'}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSave('FREEPIK_API_KEY')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowValues((v) => ({ ...v, FREEPIK_API_KEY: !v['FREEPIK_API_KEY'] }))}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-text-muted hover:text-text-primary z-10"
+                      >
+                        {showValues['FREEPIK_API_KEY'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => handleSave('FREEPIK_API_KEY')}
+                      disabled={!editValues['FREEPIK_API_KEY'] || saving['FREEPIK_API_KEY']}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 bg-primary/10 text-primary hover:bg-primary/20"
+                    >
+                      {saving['FREEPIK_API_KEY'] ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved['FREEPIK_API_KEY'] ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-text-muted mt-1">Gere em <a href="https://www.freepik.com/api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">freepik.com/api</a> → Dashboard → API Key</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

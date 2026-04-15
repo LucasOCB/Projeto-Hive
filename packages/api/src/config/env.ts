@@ -16,6 +16,8 @@ const envSchema = z.object({
 
   NANO_BANANA_API_KEY: z.string().optional(),
   NANO_BANANA_PROVIDER: z.enum(['google', 'nanobananaapi', 'fal']).default('google'),
+  FREEPIK_API_KEY: z.string().optional(),
+  IMAGE_PROVIDER: z.enum(['gemini', 'freepik']).default('gemini'),
 
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_ALLOWED_CHAT_IDS: z.string().optional(),
